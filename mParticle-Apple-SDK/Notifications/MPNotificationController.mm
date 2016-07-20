@@ -571,7 +571,7 @@ static int64_t launchNotificationHash = 0;
     NSArray *backgroundModes = bundleInfoDictionary[@"UIBackgroundModes"];
     if ([backgroundModes containsObject:@"remote-notification"]) {
 #if !TARGET_IPHONE_SIMULATOR
-        [[UIApplication sharedApplication] registerForRemoteNotifications];
+        // [[UIApplication sharedApplication] registerForRemoteNotifications];
 #endif
     }
 }
