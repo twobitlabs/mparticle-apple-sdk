@@ -1,7 +1,7 @@
 #import "MPIConstants.h"
 
 // mParticle SDK Version
-NSString *const kMParticleSDKVersion = @"7.10.5";
+NSString *const kMParticleSDKVersion = @"7.12.3";
 
 // Message Type (dt)
 NSString *const kMPMessageTypeKey = @"dt";
@@ -56,6 +56,7 @@ NSString *const kMPIsFirstTimeUserIdentityHasBeenSet = @"f";
 NSString *const kMPRemoteNotificationContentIdHistoryKey = @"cntid";
 NSString *const kMPRemoteNotificationTimestampHistoryKey = @"ts";
 NSString *const kMPForwardStatsRecord = @"fsr";
+NSString *const kMPEventCustomFlags = @"flags";
 
 // Consent
 NSString *const kMPConsentState = @"con";
@@ -295,6 +296,7 @@ NSString *const kMPMessageTypeStringPushNotificationInteraction = @"pre";
 NSString *const kMPMessageTypeStringCommerceEvent = @"cm";
 NSString *const kMPMessageTypeStringUserAttributeChange = @"uac";
 NSString *const kMPMessageTypeStringUserIdentityChange = @"uic";
+NSString *const kMPMessageTypeStringMedia = @"media";
 
 // Event type strings
 NSString *const kMPEventTypeStringUnknown = @"Unknown";
@@ -320,6 +322,7 @@ NSString *const kMPEventTypeStringPromotionClick = @"PromotionClick";
 NSString *const kMPEventTypeStringProductAddToWishlist = @"ProductAddToWishlist";
 NSString *const kMPEventTypeStringProductRemoveFromWishlist = @"ProductRemoveFromWishlist";
 NSString *const kMPEventTypeStringProductImpression = @"ProductImpression";
+NSString *const kMPEventTypeStringMedia = @"Media";
 
 //
 // Primitive data type constants

@@ -104,6 +104,7 @@ extern NSString * _Nonnull const kMPRemoteNotificationCampaignHistoryKey;
 extern NSString * _Nonnull const kMPRemoteNotificationContentIdHistoryKey;
 extern NSString * _Nonnull const kMPRemoteNotificationTimestampHistoryKey;
 extern NSString * _Nonnull const kMPForwardStatsRecord;
+extern NSString * _Nonnull const kMPEventCustomFlags;
 
 // Consent
 extern NSString * _Nonnull const kMPConsentState;
@@ -342,6 +343,7 @@ extern NSString * _Nonnull const kMPMessageTypeStringPushNotificationInteraction
 extern NSString * _Nonnull const kMPMessageTypeStringCommerceEvent;
 extern NSString * _Nonnull const kMPMessageTypeStringUserAttributeChange;
 extern NSString * _Nonnull const kMPMessageTypeStringUserIdentityChange;
+extern NSString * _Nonnull const kMPMessageTypeStringMedia;
 
 // Event type strings
 extern NSString * _Nonnull const kMPEventTypeStringUnknown;
@@ -367,6 +369,7 @@ extern NSString * _Nonnull const kMPEventTypeStringPromotionClick;
 extern NSString * _Nonnull const kMPEventTypeStringProductAddToWishlist;
 extern NSString * _Nonnull const kMPEventTypeStringProductRemoveFromWishlist;
 extern NSString * _Nonnull const kMPEventTypeStringProductImpression;
+extern NSString * _Nonnull const kMPEventTypeStringMedia;
 
 //
 // Primitive data type constants

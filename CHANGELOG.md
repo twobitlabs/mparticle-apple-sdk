@@ -1,5 +1,51 @@
 # mParticle Apple SDK CHANGELOG
 
+
+## 7.12.3
+
+- This release fixes a typo that caused `MPEvent` attributes to return nil if the deprecated `info` property was used. Due to our kits not yet having been updated to use the new property name, this was resulting in empty event attributes dictionaries being forwarded to kits.
+
+## 7.12.2
+
+- This release fixes Commerce events collected over the WKWebView bridge. Previously, the mapping of Web SDK-defined product-actions to Apple SDK product-actions was incorrect.
+
+## 7.12.1
+
+### Core
+
+- This release rolls back a change to the `MPEventType` enum that caused problems with Swift compatibility and adds Swift unit tests to ensure this API remains stable going forward.
+
+- Guard against potential crash if null product array is received from JS webview integration
+
+### Kits
+
+- None
+
+## 7.12.0
+
+## mParticle Media SDK
+
+This release introduces support for the [mParticle Apple Media SDK](https://github.com/mParticle/mparticle-apple-media-sdk)!
+
+Media tracking capabilities have been added by creating a separate module that you can add to your project in addition to the core SDK.
+
+For more details, see the Media SDK repository: https://github.com/mParticle/mparticle-apple-media-sdk
+
+### Other items
+
+- You may notice that our main `MParticle#logEvent:` API has been changed to take a different type of parameter. This should not affect your code, except you can now pass commerce events to that method in addition to `MPEvent` objects.
+
+- This release also includes a change to improve session management in cases where the background timer was not allowed to run by the OS.
+
+## 7.11.0
+
+## iOS 13 Official Support
+### Push Registration
+If you are collecting push registration tokens and using them for server-side integrations, this is a *critical update*. If you are only registering for push via kits (such as Braze), you can use iOS Braze kit 7.10.7 or later with iOS 13.
+
+### UIWebView and User Agent Collection
+Support for UIWebView has been removed. User agent collection has been disabled in this release. You may manually supply the user agent to the MParticleOptions object on SDK initialization if required.
+
 ## 7.10.5
 
 ## Core

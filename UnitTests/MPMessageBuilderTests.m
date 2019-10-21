@@ -264,9 +264,7 @@ NSString *const kMPStateDataConnectionKey = @"dct";
     commerceEvent.checkoutOptions = @"option 1";
     commerceEvent.screenName = @"Time Traveling";
     commerceEvent.checkoutStep = 1;
-    commerceEvent[@"key_string"] = @"val_string";
-    commerceEvent[@"key_number"] = @"3.14";
-    commerceEvent[@"key_date"] = @"01/01/2000";
+    commerceEvent.customAttributes = @{@"key_string": @"val_string", @"key_number": @"3.14", @"key_date": @"01/01/2000"};
     
     MPCart *cart = [MParticle sharedInstance].identity.currentUser.cart;
     [cart clear];
@@ -293,7 +291,7 @@ NSString *const kMPStateDataConnectionKey = @"dct";
     
     MPMessageBuilder *messageBuilder = [MPMessageBuilder newBuilderWithMessageType:MPMessageTypeCommerceEvent
                                                                            session:self.session
-                                                                     commerceEvent:commerceEvent];
+                                                                     messageInfo:commerceEvent.customAttributes];
     
     XCTAssertNotNil(messageBuilder, @"Message builder should not have been nil.");
     XCTAssertEqualObjects(messageBuilder.messageType, @"cm", @"Incorrect message type.");
@@ -319,7 +317,7 @@ NSString *const kMPStateDataConnectionKey = @"dct";
     
     MPMessageBuilder *messageBuilder = [MPMessageBuilder newBuilderWithMessageType:MPMessageTypeCommerceEvent
                                                                            session:self.session
-                                                                     commerceEvent:commerceEvent];
+                                                                     messageInfo:commerceEvent.customAttributes];
     
     XCTAssertNotNil(messageBuilder, @"Message builder should not have been nil.");
     XCTAssertEqualObjects(messageBuilder.messageType, @"cm", @"Incorrect message type.");

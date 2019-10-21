@@ -76,6 +76,8 @@
 - (BOOL)checkAttribute:(NSDictionary *)attributesDictionary key:(NSString *)key value:(id)value error:(out NSError *__autoreleasing *)error;
 - (BOOL)checkAttribute:(NSDictionary *)attributesDictionary key:(NSString *)key value:(id)value maxValueLength:(NSUInteger)maxValueLength error:(out NSError *__autoreleasing *)error;
 - (NSArray *)batchMessageArraysFromMessageArray:(NSArray *)messages maxBatchMessages:(NSInteger)maxBatchMessages maxBatchBytes:(NSInteger)maxBatchBytes maxMessageBytes:(NSInteger)maxMessageBytes;
+- (void)uploadOpenSessions:(NSMutableArray *)openSessions completionHandler:(void (^)(void))completionHandler;
+- (void)backgroundTaskBlock;
 
 @end
 
@@ -281,6 +283,85 @@
     [self waitForExpectationsWithTimeout:BACKEND_TESTS_EXPECTATIONS_TIMEOUT handler:nil];
 }
 
+- (void)testAutomaticSessionEnd {
+    MPPersistenceController *persistence = [MParticle sharedInstance].persistenceController;
+    MParticle *mParticle = [MParticle sharedInstance];
+    id mockBackendController = OCMPartialMock(self.backendController);
+    mParticle.backendController = mockBackendController;
+    self.backendController = [MParticle sharedInstance].backendController;
+    
+    dispatch_sync(messageQueue, ^{
+        [self.backendController beginSession];
+        self.session = self.backendController.session;
+        NSMutableArray *sessions = [persistence fetchSessions];
+        MPSession *session = [sessions lastObject];
+        MPStateMachine *stateMachine = [MParticle sharedInstance].stateMachine;
+        XCTAssertEqualObjects(session, stateMachine.currentSession, @"Current session and last session in the database are not equal.");
+        
+        NSDictionary *messagesDictionary = [persistence fetchMessagesForUploading];
+        NSMutableDictionary *sessionsDictionary = messagesDictionary[[MPPersistenceController mpId]];
+        NSArray *messages =  [sessionsDictionary objectForKey:[NSNumber numberWithLong:self->_session.sessionId]];
+        BOOL containsSessionStart = NO;
+        
+        for (MPMessage *message in messages) {
+            if ([message.messageType isEqualToString:@"ss"]) {
+                containsSessionStart = YES;
+            }
+        }
+        
+        XCTAssertTrue(containsSessionStart, @"Begin session does not contain a session start message.");
+        
+        [[mockBackendController expect] uploadOpenSessions:sessions completionHandler:OCMOCK_ANY];
+        
+        [self.backendController processOpenSessionsEndingCurrent:YES completionHandler:nil];
+        
+        [mockBackendController verifyWithDelay:5.0];
+        [mockBackendController stopMocking];
+    });
+}
+
+- (void)testBackgroundBlock {
+    MPPersistenceController *persistence = [MParticle sharedInstance].persistenceController;
+    XCTestExpectation *expectation = [self expectationWithDescription:@"Begin background block test"];
+    
+    dispatch_sync(messageQueue, ^{
+        [self.backendController beginSession];
+        self.session = self.backendController.session;
+        NSMutableArray *sessions = [persistence fetchSessions];
+        MPSession *session = [sessions lastObject];
+        MPStateMachine *stateMachine = [MParticle sharedInstance].stateMachine;
+        XCTAssertEqualObjects(session, stateMachine.currentSession, @"Current session and last session in the database are not equal.");
+        
+        NSDictionary *messagesDictionary = [persistence fetchMessagesForUploading];
+        NSMutableDictionary *sessionsDictionary = messagesDictionary[[MPPersistenceController mpId]];
+        NSArray *messages =  [sessionsDictionary objectForKey:[NSNumber numberWithLong:self->_session.sessionId]];
+        BOOL containsSessionStart = NO;
+        
+        for (MPMessage *message in messages) {
+            if ([message.messageType isEqualToString:@"ss"]) {
+                containsSessionStart = YES;
+            }
+        }
+        XCTAssertTrue(containsSessionStart, @"Begin session does not contain a session start message.");
+        
+        [self.backendController endSession];
+        [self.backendController beginSession];
+        session = self.backendController.session;
+        sessions = [persistence fetchSessions];
+        XCTAssertEqual(sessions.count, 2);
+        
+        [self.backendController backgroundTaskBlock];
+        XCTAssertNotNil(self.backendController.session);
+        
+        MPMessage *message = [persistence fetchSessionEndMessageInSession:session];
+        XCTAssertNil(message);
+        
+        [expectation fulfill];
+    });
+    
+    [self waitForExpectationsWithTimeout:BACKEND_TESTS_EXPECTATIONS_TIMEOUT handler:nil];
+}
+
 - (void)testCheckAttributeValueEmpty {
     NSError *error = nil;
     BOOL success = [MPBackendController checkAttribute:[NSDictionary dictionary] key:@"foo"
@@ -406,7 +487,7 @@
     });
     self.session = self.backendController.session;
     MPEvent *event = [[MPEvent alloc] initWithName:@"Unit Test Event" type:MPEventTypeOther];
-    event.info = @{@"key":@"value"};
+    event.customAttributes = @{@"key":@"value"};
     
     MPPersistenceController *persistence = [MParticle sharedInstance].persistenceController;
     
@@ -418,9 +499,15 @@
     NSArray *messages =  [sessionsDictionary objectForKey:[NSNumber numberWithLong:self->_session.sessionId]];
     XCTAssertGreaterThan(messages.count, 0, @"Messages are not being persisted.");
     
+    BOOL eventFound = NO;
     for (MPMessage *message in messages) {
         XCTAssertTrue(message.uploadStatus != MPUploadStatusUploaded, @"Messages are being prematurely being marked as uploaded.");
+        if ([message.messageType isEqualToString:kMPMessageTypeStringEvent]) {
+            eventFound = YES;
+        }
     }
+    XCTAssertTrue(eventFound, @"Message for logEvent is not being saved.");
+
     
     MPUploadBuilder *uploadBuilder = [MPUploadBuilder newBuilderWithMpid:[MPPersistenceController mpId] sessionId:[NSNumber numberWithLong:self->_session.sessionId] messages:messages sessionTimeout:100 uploadInterval:100];
     XCTAssertNotNil(uploadBuilder, @"Upload builder should not have been nil.");
@@ -444,6 +531,30 @@
         uploads = [persistence fetchUploads];
         XCTAssertNil(uploads, @"Uploads are not being deleted.");
     }];
+}
+
+- (void)testloggingBaseEvent {
+    dispatch_sync([MParticle messageQueue], ^{
+        [self.backendController beginSession];
+    });
+    self.session = self.backendController.session;
+    MPBaseEvent *event = [[MPBaseEvent alloc] initWithEventType:MPEventTypeOther];
+    event.customAttributes = @{@"key":@"value"};
+    
+    MPPersistenceController *persistence = [MParticle sharedInstance].persistenceController;
+    
+    [self.backendController logBaseEvent:event
+                   completionHandler:^(MPBaseEvent *event, MPExecStatus execStatus) {}];
+    
+    NSDictionary *messagesDictionary = [persistence fetchMessagesForUploading];
+    NSMutableDictionary *sessionsDictionary = messagesDictionary[[MPPersistenceController mpId]];
+    NSArray *messages =  [sessionsDictionary objectForKey:[NSNumber numberWithLong:self->_session.sessionId]];
+    XCTAssertGreaterThan(messages.count, 0, @"Messages are not being persisted.");
+    
+    for (MPMessage *message in messages) {
+        XCTAssertTrue(message.uploadStatus != MPUploadStatusUploaded, @"Messages are being prematurely being marked as uploaded.");
+        XCTAssertTrue(![message.messageType isEqualToString:kMPMessageTypeStringUnknown], @"MPBaseEvent messages are being logged to server.");
+    }
 }
 
 - (void)testRampUpload {
